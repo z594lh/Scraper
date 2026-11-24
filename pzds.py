@@ -12,6 +12,7 @@
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
@@ -32,15 +33,21 @@ def load_config():
     return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
-def open_page(p):
-    ctx = p.chromium.launch_persistent_context(
-        str(PROFILE),
-        channel="chrome",
+def open_page(p, cfg=None):
+    # 默认用本机 Chrome 通道；虚拟机等环境可用 PZDS_CHROME 指定浏览器路径，
+    # 避免影响系统默认浏览器（channel 与 executable_path 不能同时给）。
+    exe = os.environ.get("PZDS_CHROME") or (cfg or {}).get("chromeExecutable")
+    opts = dict(
         headless=False,  # headless 会被 WAF 拦截
         locale="zh-CN",
         timezone_id="Asia/Shanghai",
         viewport={"width": 1440, "height": 960},
     )
+    if exe:
+        opts["executable_path"] = exe
+    else:
+        opts["channel"] = "chrome"
+    ctx = p.chromium.launch_persistent_context(str(PROFILE), **opts)
     page = ctx.pages[0] if ctx.pages else ctx.new_page()
     page.set_default_timeout(15000)
     return ctx, page
@@ -52,7 +59,7 @@ def is_logged_in(page):
 
 def do_login(cfg):
     with sync_playwright() as p:
-        ctx, page = open_page(p)
+        ctx, page = open_page(p, cfg)
         page.goto(cfg["listUrl"], wait_until="domcontentloaded", timeout=90000)
         page.wait_for_timeout(3000)
         if is_logged_in(page):
@@ -189,7 +196,7 @@ def collect(cfg, max_pages):
             pass
 
     with sync_playwright() as p:
-        ctx, page = open_page(p)
+        ctx, page = open_page(p, cfg)
         page.on("response", on_response)
         page.goto(cfg["listUrl"], wait_until="domcontentloaded", timeout=90000)
         page.wait_for_timeout(4000)
