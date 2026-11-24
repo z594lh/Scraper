@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import select
@@ -17,6 +18,14 @@ scheduler = BackgroundScheduler(timezone="Asia/Shanghai", daemon=True)
 
 
 def _job(project_id: int) -> None:
+    db = SessionLocal()
+    try:
+        project = db.get(Project, project_id)
+        if project and project.pause_until and project.pause_until > datetime.now():
+            log.info("项目 %s 风控暂停中（至 %s），跳过本次定时任务", project_id, project.pause_until)
+            return
+    finally:
+        db.close()
     try:
         runner.start_run(project_id, trigger="schedule")
     except runner.BusyError:

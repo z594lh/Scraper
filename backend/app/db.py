@@ -25,6 +25,18 @@ def init_db() -> None:
     from . import sites  # noqa: F401  站点私有表（随站点注册自动建表）
 
     Base.metadata.create_all(engine)
+    _ensure_columns()
+
+
+def _ensure_columns() -> None:
+    """为已存在的库补新增列（create_all 不会改老表）。"""
+    with engine.begin() as conn:
+        has_pause = conn.exec_driver_sql("SHOW COLUMNS FROM projects LIKE 'pause_until'").first()
+        if not has_pause:
+            conn.exec_driver_sql(
+                "ALTER TABLE projects ADD COLUMN pause_until DATETIME NULL "
+                "COMMENT '定时暂停截止时间（风控触发后 2 小时内跳过定时任务）'"
+            )
 
 
 def get_db() -> Iterator[Session]:

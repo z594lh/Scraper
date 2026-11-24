@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import threading
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .common.store import save_items, save_options
 from .crawlers.base import CrawlError
@@ -17,6 +17,9 @@ from .models import Project, Run
 from .notify import build_new_items_message, normalize_rules, send_to
 from .sites import build_crawler, get_site, workdir_of
 
+RISK_PAUSE_HOURS = 2  # 触发风控后暂停定时的时长
+RISK_KEYWORDS = ("滑块", "风控", "验证")
+
 _running: set[int] = set()
 _state_lock = threading.Lock()
 _login_tasks: dict[int, dict] = {}
@@ -24,6 +27,21 @@ _login_tasks: dict[int, dict] = {}
 
 class BusyError(RuntimeError):
     pass
+
+
+def _is_risk(message: str) -> bool:
+    """是否是风控/滑块类失败。"""
+    return any(keyword in message for keyword in RISK_KEYWORDS)
+
+
+def _pause_schedule(project: Project, run: Run) -> None:
+    """风控触发后把该项目定时任务暂停一段时间。"""
+    project.pause_until = datetime.now() + timedelta(hours=RISK_PAUSE_HOURS)
+    note = (
+        f"\n风控触发：定时任务暂停 {RISK_PAUSE_HOURS} 小时，"
+        f"至 {project.pause_until:%Y-%m-%d %H:%M:%S}（手动抓取不受影响）"
+    )
+    run.log = (run.log or "") + note
 
 
 def is_running(project_id: int) -> bool:
@@ -62,6 +80,7 @@ def _execute(run_id: int, project_id: int, trigger: str) -> None:
             run.total = len(result.items)
             run.new_count = len(fresh)
             run.filters = result.filters
+            project.pause_until = None  # 抓取成功即解除风控暂停
             log = result.log or ""
             if first_run:
                 log += "\n首次运行：已建立基线，本次不标记 NEW"
@@ -90,6 +109,8 @@ def _execute(run_id: int, project_id: int, trigger: str) -> None:
         except CrawlError as exc:
             run.status = "failed"
             run.message = str(exc)
+            if _is_risk(run.message):
+                _pause_schedule(project, run)
             run.finished_at = datetime.now()
             db.commit()
             if normalize_rules(project.notify_rules)["runFailed"]["enabled"]:
@@ -103,6 +124,8 @@ def _execute(run_id: int, project_id: int, trigger: str) -> None:
             run.status = "failed"
             run.message = f"{type(exc).__name__}: {exc}"
             run.log = traceback.format_exc()
+            if _is_risk(run.message):
+                _pause_schedule(project, run)
             run.finished_at = datetime.now()
             db.commit()
             if normalize_rules(project.notify_rules)["runFailed"]["enabled"]:

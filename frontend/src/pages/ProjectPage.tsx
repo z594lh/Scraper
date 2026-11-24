@@ -323,6 +323,17 @@ export default function ProjectPage() {
       {project.login.state === 'failed' ? (
         <Alert type="error" showIcon style={{ marginBottom: 12 }} message="登录失败" description={project.login.message} />
       ) : null}
+      {project.pauseUntil ? (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="风控暂停中"
+          description={`定时任务已暂停，将于 ${new Date(project.pauseUntil).toLocaleString('zh-CN', {
+            hour12: false,
+          })} 后恢复；手动抓取不受影响`}
+        />
+      ) : null}
       {project.lastRun?.status === 'failed' ? (
         <Alert
           type="warning"

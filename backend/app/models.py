@@ -58,6 +58,11 @@ class Project(Base):
         nullable=True,
         comment="通知规则（新增条数阈值/执行失败/执行完成）",
     )
+    pause_until: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+        comment="定时暂停截止时间（风控触发后 2 小时内跳过定时任务）",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=now, comment="创建时间"
     )

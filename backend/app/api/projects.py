@@ -125,6 +125,7 @@ def _project_dict(db: Session, project: Project, detail: bool = False) -> dict:
         "enabled": project.enabled,
         "config": project.config or {},
         "scheduleMinutes": project.schedule_minutes,
+        "pauseUntil": _iso(project.pause_until),
         "notifyChannels": project.notify_channels or [],
         "notifyRules": normalize_rules(project.notify_rules),
         "createdAt": _iso(project.created_at),

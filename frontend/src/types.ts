@@ -98,6 +98,7 @@ export interface Project {
   enabled: boolean
   config: Record<string, unknown>
   scheduleMinutes: number
+  pauseUntil?: string | null
   notifyChannels: string[]
   notifyRules: NotifyRules
   createdAt: string
