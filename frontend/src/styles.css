@@ -1,0 +1,164 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f6fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+}
+
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 20px 16px;
+  color: #fff;
+}
+
+.app-logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  color: #fff;
+}
+
+.app-logo-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.app-logo-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: #111827;
+}
+
+.page-sub {
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  border: 1px solid #eef0f4;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #111827;
+}
+
+.stat-label {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.project-card {
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #eef0f4;
+  padding: 18px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  transition: box-shadow 0.2s;
+}
+
+.project-card:hover {
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.1);
+}
+
+.project-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.muted {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+.price {
+  font-weight: 700;
+  color: #d4380d;
+}
+
+.item-title {
+  color: #1f2937;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag-editor-group {
+  border: 1px dashed #d9d9e3;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: #fafafa;
+}
+
+.login-hint {
+  border-radius: 10px;
+  background: #f0f5ff;
+  border: 1px solid #d6e4ff;
+  padding: 10px 14px;
+  color: #1d39c4;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.config-group {
+  border: 1px solid #eef0f4;
+  border-radius: 12px;
+  padding: 14px 16px 4px;
+  margin-bottom: 14px;
+  background: #fcfcfe;
+}
+
+.config-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4f46e5;
+  margin-bottom: 12px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field-label {
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.field .required {
+  color: #ff4d4f;
+}
+

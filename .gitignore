@@ -1,5 +1,11 @@
-.profile/
 .venv/
-results/
-state.json
+.env
 __pycache__/
+*.pyc
+
+# 运行时数据：数据库无关的项目指纹与浏览器 profile
+backend/data/
+
+# 前端
+frontend/node_modules/
+frontend/dist/

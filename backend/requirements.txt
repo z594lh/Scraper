@@ -1,0 +1,13 @@
+# 后端依赖（安装到仓库根目录的 .venv）
+fastapi>=0.110
+uvicorn[standard]>=0.29
+sqlalchemy>=2.0
+pymysql>=1.1
+cryptography>=42.0
+pydantic-settings>=2.2
+python-dotenv>=1.0
+apscheduler>=3.10
+tzdata>=2024.1
+httpx>=0.27
+# 抓取（有头浏览器，headless 会被 WAF 拦截）
+patchright>=1.40
