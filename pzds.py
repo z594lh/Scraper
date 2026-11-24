@@ -14,6 +14,7 @@ import argparse
 import json
 import os
 import random
+import shutil
 import sys
 import time
 from datetime import datetime
@@ -37,27 +38,72 @@ def open_page(p, cfg=None):
     # 默认用本机 Chrome 通道；虚拟机等环境可用 PZDS_CHROME 指定浏览器路径，
     # 避免影响系统默认浏览器（channel 与 executable_path 不能同时给）。
     exe = os.environ.get("PZDS_CHROME") or (cfg or {}).get("chromeExecutable")
-    opts = dict(
-        headless=False,  # headless 会被 WAF 拦截
-        locale="zh-CN",
-        timezone_id="Asia/Shanghai",
-        viewport={"width": 1440, "height": 960},
-    )
+
+    def launch(extra):
+        opts = dict(
+            headless=False,  # headless 会被 WAF 拦截
+            locale="zh-CN",
+            timezone_id="Asia/Shanghai",
+            viewport={"width": 1440, "height": 960},
+        )
+        opts.update(extra)
+        ctx = p.chromium.launch_persistent_context(str(PROFILE), **opts)
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+        page.set_default_timeout(15000)
+        return ctx, page
+
     if exe:
-        opts["executable_path"] = exe
-    else:
-        opts["channel"] = "chrome"
-    ctx = p.chromium.launch_persistent_context(str(PROFILE), **opts)
-    page = ctx.pages[0] if ctx.pages else ctx.new_page()
-    page.set_default_timeout(15000)
-    return ctx, page
+        return launch({"executable_path": exe})
+    try:
+        return launch({"channel": "chrome"})
+    except Exception:
+        # 没有标准安装路径的 Chrome 时，回退到系统可执行文件
+        fallback = shutil.which("google-chrome") or shutil.which("google-chrome-stable") or shutil.which("chromium")
+        if not fallback:
+            raise
+        return launch({"executable_path": fallback})
 
 
 def is_logged_in(page):
+    if "/login" in page.url:
+        return False
     return page.get_by_text("登录/注册").count() == 0
 
 
+def click_visible_text(page, text):
+    items = page.get_by_text(text, exact=True)
+    for i in range(items.count()):
+        loc = items.nth(i)
+        try:
+            if loc.is_visible() and loc.inner_text().strip() == text:
+                loc.click(timeout=4000)
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def first_visible(page, selector):
+    loc = page.locator(selector)
+    for i in range(loc.count()):
+        item = loc.nth(i)
+        try:
+            if item.is_visible():
+                return item
+        except Exception:
+            continue
+    return None
+
+
+def wait_login(page, seconds):
+    deadline = time.time() + seconds
+    while time.time() < deadline and not is_logged_in(page):
+        time.sleep(2)
+    return is_logged_in(page)
+
+
 def do_login(cfg):
+    """终端交互式手机验证码登录（虚拟机无显示器时使用）。"""
     with sync_playwright() as p:
         ctx, page = open_page(p, cfg)
         page.goto(cfg["listUrl"], wait_until="domcontentloaded", timeout=90000)
@@ -66,13 +112,40 @@ def do_login(cfg):
             print("已处于登录状态，无需重复登录。", flush=True)
             ctx.close()
             return 0
-        print("请在浏览器窗口内完成登录（扫码/短信均可）…", flush=True)
-        deadline = time.time() + 600
-        while time.time() < deadline and not is_logged_in(page):
-            time.sleep(2)
-        ok = is_logged_in(page)
+
+        try:
+            page.get_by_text("登录/注册").first.click(timeout=8000)
+        except Exception:
+            pass
+        page.wait_for_timeout(2500)
+
+        phone_input = first_visible(page, 'input[placeholder="请输入手机号"]')
+        if phone_input:
+            phone_input.click()
+            phone_input.fill(input("请输入登录手机号: ").strip())
+            if not click_visible_text(page, "获取验证码"):
+                print("未能自动点击“获取验证码”，如页面可见请手动点击。", flush=True)
+            code = input("请输入收到的短信验证码: ").strip()
+            code_input = first_visible(page, 'input[placeholder="请输入验证码"]')
+            if code_input:
+                code_input.fill(code)
+            submit = first_visible(page, "button.login-btn")
+            if submit:
+                submit.click()
+            page.wait_for_timeout(6000)
+            ok = wait_login(page, 60)
+            if not ok and waf_blocked(page):
+                page.screenshot(path=str(ROOT / "login_blocked.png"))
+                print("出现滑块验证，截图已存 login_blocked.png，请稍后重试。", flush=True)
+                ctx.close()
+                return 1
+            print("登录成功，登录态已保存。" if ok else "登录未成功，请重新执行 login。", flush=True)
+            ctx.close()
+            return 0 if ok else 1
+
+        print("未识别到验证码登录表单，请在浏览器窗口内手动完成登录…", flush=True)
+        ok = wait_login(page, 600)
         print("登录成功，登录态已保存。" if ok else "等待登录超时。", flush=True)
-        page.wait_for_timeout(1500)
         ctx.close()
         return 0 if ok else 1
 
