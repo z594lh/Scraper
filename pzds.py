@@ -95,6 +95,26 @@ def first_visible(page, selector):
     return None
 
 
+def check_agreement(page):
+    """勾选“服务协议”复选框（element-ui 原生 input 隐藏，需点可视区域）。"""
+    boxes = page.locator(".el-checkbox")
+    for i in range(boxes.count()):
+        box = boxes.nth(i)
+        try:
+            if not box.is_visible():
+                continue
+            native = box.locator("input.el-checkbox__original")
+            if native.count() and native.first.is_checked():
+                return True
+            box.locator(".el-checkbox__inner").click(timeout=4000)
+            page.wait_for_timeout(300)
+            print("已勾选服务协议", flush=True)
+            return True
+        except Exception:
+            continue
+    return False
+
+
 def wait_login(page, seconds):
     deadline = time.time() + seconds
     while time.time() < deadline and not is_logged_in(page):
@@ -133,15 +153,13 @@ def do_login(cfg):
                 print("已填入验证码，长度", len(code), flush=True)
             submit = first_visible(page, "button.login-btn")
             if submit:
-                print("提交按钮状态:", submit.get_attribute("class"), "disabled=", submit.is_disabled(), flush=True)
+                check_agreement(page)
                 submit.click()
             page.wait_for_timeout(3000)
             msgs = page.evaluate("""() => Array.from(document.querySelectorAll('.el-message, .el-message__content, [class*=toast], [role=alert]')).map(e => (e.innerText||'').trim()).filter(Boolean).slice(0,5)""")
-            print("页面提示:", msgs, flush=True)
-            boxes = page.evaluate("""() => Array.from(document.querySelectorAll('input[type=checkbox]')).map(i => ({checked: i.checked, visible: i.getBoundingClientRect().width > 0, cls: (i.className||'').slice(0,40)}))""")
-            print("复选框:", boxes, flush=True)
+            if msgs:
+                print("页面提示:", msgs, flush=True)
             page.screenshot(path=str(ROOT / "login_after.png"))
-            print("当前页面:", page.url, flush=True)
             page.wait_for_timeout(3000)
             ok = wait_login(page, 60)
             if not ok and waf_blocked(page):
