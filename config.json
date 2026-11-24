@@ -1,0 +1,30 @@
+{
+  "gameId": 63,
+  "goodsCatalogueId": 6,
+  "listUrl": "https://www.pzds.com/goodsList/63/6?goodsCatalogueId=6",
+  "region": "浮生若梦",
+  "priceMin": 0,
+  "priceMax": 1000,
+  "sections": {
+    "珍品外观": [
+      "白泽·太霄雷狩",
+      "沧溟·太霄雷狩",
+      "金辉驰梦",
+      "天鹿引虹",
+      "千星落纱",
+      "焚天执衡"
+    ],
+    "载具飞剑": [
+      "玄穹御风",
+      "玄穹引霆",
+      "南溟掠影",
+      "沧海浮光",
+      "绯月瑶",
+      "踏夜尊"
+    ]
+  },
+  "matchAny": true,
+  "sortByNewest": true,
+  "maxPages": 2,
+  "clickGapSeconds": [8, 11]
+}
