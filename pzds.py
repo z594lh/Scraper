@@ -123,16 +123,26 @@ def do_login(cfg):
         if phone_input:
             phone_input.click()
             phone_input.fill(input("请输入登录手机号: ").strip())
+            print("已填写手机号:", phone_input.input_value(), flush=True)
             if not click_visible_text(page, "获取验证码"):
                 print("未能自动点击“获取验证码”，如页面可见请手动点击。", flush=True)
             code = input("请输入收到的短信验证码: ").strip()
             code_input = first_visible(page, 'input[placeholder="请输入验证码"]')
             if code_input:
                 code_input.fill(code)
+                print("已填入验证码，长度", len(code), flush=True)
             submit = first_visible(page, "button.login-btn")
             if submit:
+                print("提交按钮状态:", submit.get_attribute("class"), "disabled=", submit.is_disabled(), flush=True)
                 submit.click()
-            page.wait_for_timeout(6000)
+            page.wait_for_timeout(3000)
+            msgs = page.evaluate("""() => Array.from(document.querySelectorAll('.el-message, .el-message__content, [class*=toast], [role=alert]')).map(e => (e.innerText||'').trim()).filter(Boolean).slice(0,5)""")
+            print("页面提示:", msgs, flush=True)
+            boxes = page.evaluate("""() => Array.from(document.querySelectorAll('input[type=checkbox]')).map(i => ({checked: i.checked, visible: i.getBoundingClientRect().width > 0, cls: (i.className||'').slice(0,40)}))""")
+            print("复选框:", boxes, flush=True)
+            page.screenshot(path=str(ROOT / "login_after.png"))
+            print("当前页面:", page.url, flush=True)
+            page.wait_for_timeout(3000)
             ok = wait_login(page, 60)
             if not ok and waf_blocked(page):
                 page.screenshot(path=str(ROOT / "login_blocked.png"))
